@@ -9,15 +9,21 @@ import {
   KeyboardAvoidingView,
   Platform,
   Image,
+  Switch,
+  SafeAreaView,
 } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { UserProfile } from '../types';
 import { saveUserProfile } from '../services/storage';
+import { useTheme } from '../context/ThemeContext';
 
 interface OnboardingScreenProps {
   onComplete: () => void;
 }
 
 export default function OnboardingScreen({ onComplete }: OnboardingScreenProps) {
+  const { theme, themeMode, toggleTheme } = useTheme();
+  const styles = createStyles(theme);
   const [profile, setProfile] = useState<UserProfile>({
     name: '',
     age: 0,
@@ -28,6 +34,8 @@ export default function OnboardingScreen({ onComplete }: OnboardingScreenProps) 
     goal: 'maintain',
     dietaryPreference: 'vegetarian',
   });
+  const [heightText, setHeightText] = useState('');
+  const [weightText, setWeightText] = useState('');
 
   const handleSubmit = async () => {
     if (
@@ -49,26 +57,50 @@ export default function OnboardingScreen({ onComplete }: OnboardingScreenProps) 
   };
 
   return (
-    <KeyboardAvoidingView
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-      style={styles.container}
-    >
-      <View style={styles.header}>
-        <View style={styles.headerTop}>
-          <Image source={require('../../assets/icon.png')} style={styles.logo} />
-          <View>
-            <Text style={styles.headerTitle}>Welcome to NutriGuide 🥗</Text>
-            <Text style={styles.headerSubtitle}>Let's create your personalized nutrition plan</Text>
+    <SafeAreaView style={styles.safeArea}>
+      <KeyboardAvoidingView
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        style={styles.container}
+      >
+        <View style={styles.header}>
+          <View style={styles.headerTop}>
+            <Image source={require('../../assets/icon.png')} style={styles.logo} />
+            <View>
+              <Text style={styles.headerTitle}>Welcome to NutriGuide 🥗</Text>
+              <Text style={styles.headerSubtitle}>Let's create your personalized nutrition plan</Text>
+            </View>
           </View>
         </View>
-      </View>
-      <ScrollView contentContainerStyle={styles.scrollContent}>
+        <ScrollView style={styles.scrollView} contentContainerStyle={styles.scrollContent}>
+
+        <View style={styles.card}>
+          <Text style={styles.sectionTitle}>Appearance</Text>
+          <View style={styles.themeToggleContainer}>
+            <View style={styles.themeToggleLeft}>
+              <Ionicons
+                name={themeMode === 'dark' ? 'moon' : 'sunny'}
+                size={24}
+                color={theme.colors.primary}
+              />
+              <Text style={styles.themeToggleText}>
+                {themeMode === 'dark' ? 'Dark Mode' : 'Light Mode'}
+              </Text>
+            </View>
+            <Switch
+              value={themeMode === 'dark'}
+              onValueChange={toggleTheme}
+              trackColor={{ false: '#ddd', true: theme.colors.primary }}
+              thumbColor="#fff"
+            />
+          </View>
+        </View>
 
         <View style={styles.inputGroup}>
           <Text style={styles.label}>Name</Text>
           <TextInput
             style={styles.input}
             placeholder="Enter your name"
+            placeholderTextColor={theme.colors.textTertiary}
             value={profile.name}
             onChangeText={(text) => setProfile({ ...profile, name: text })}
           />
@@ -79,6 +111,7 @@ export default function OnboardingScreen({ onComplete }: OnboardingScreenProps) 
           <TextInput
             style={styles.input}
             placeholder="Enter your age"
+            placeholderTextColor={theme.colors.textTertiary}
             keyboardType="numeric"
             value={profile.age > 0 ? profile.age.toString() : ''}
             onChangeText={(text) =>
@@ -91,13 +124,16 @@ export default function OnboardingScreen({ onComplete }: OnboardingScreenProps) 
           <Text style={styles.label}>Height (in cm)</Text>
           <TextInput
             style={styles.input}
-            placeholder="e.g., 175"
-            keyboardType="numeric"
-            value={profile.height > 0 ? profile.height.toString() : ''}
+            placeholder="e.g., 175.5"
+            placeholderTextColor={theme.colors.textTertiary}
+            keyboardType="decimal-pad"
+            value={heightText}
             onChangeText={(text) => {
-              // Allow decimal input
-              const cleanText = text.replace(/[^0-9.]/g, '');
-              setProfile({ ...profile, height: parseFloat(cleanText) || 0 });
+              setHeightText(text);
+              const numValue = parseFloat(text);
+              if (!isNaN(numValue)) {
+                setProfile({ ...profile, height: numValue });
+              }
             }}
           />
         </View>
@@ -106,13 +142,16 @@ export default function OnboardingScreen({ onComplete }: OnboardingScreenProps) 
           <Text style={styles.label}>Weight (in kg)</Text>
           <TextInput
             style={styles.input}
-            placeholder="e.g., 70"
-            keyboardType="numeric"
-            value={profile.weight > 0 ? profile.weight.toString() : ''}
+            placeholder="e.g., 70.5"
+            placeholderTextColor={theme.colors.textTertiary}
+            keyboardType="decimal-pad"
+            value={weightText}
             onChangeText={(text) => {
-              // Allow decimal input
-              const cleanText = text.replace(/[^0-9.]/g, '');
-              setProfile({ ...profile, weight: parseFloat(cleanText) || 0 });
+              setWeightText(text);
+              const numValue = parseFloat(text);
+              if (!isNaN(numValue)) {
+                setProfile({ ...profile, weight: numValue });
+              }
             }}
           />
         </View>
@@ -247,17 +286,21 @@ export default function OnboardingScreen({ onComplete }: OnboardingScreenProps) 
           <Text style={styles.submitButtonText}>Start My Journey 🚀</Text>
         </TouchableOpacity>
       </ScrollView>
-    </KeyboardAvoidingView>
+      </KeyboardAvoidingView>
+    </SafeAreaView>
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (theme: any) => StyleSheet.create({
+  safeArea: {
+    flex: 1,
+    backgroundColor: theme.colors.background,
+  },
   container: {
     flex: 1,
-    backgroundColor: '#f5f5f5',
   },
   header: {
-    backgroundColor: '#27ae60',
+    backgroundColor: theme.colors.primary,
     padding: 20,
     paddingTop: 40,
     paddingBottom: 30,
@@ -271,22 +314,56 @@ const styles = StyleSheet.create({
     height: 40,
     marginRight: 10,
     borderRadius: 20,
-    backgroundColor: '#fff',
   },
   headerTitle: {
     fontSize: 24,
     fontWeight: 'bold',
-    color: '#fff',
+    color: theme.colors.headerText,
     marginBottom: 4,
   },
   headerSubtitle: {
     fontSize: 14,
-    color: '#fff',
+    color: theme.colors.headerText,
     opacity: 0.9,
+  },
+  scrollView: {
+    backgroundColor: theme.colors.background,
   },
   scrollContent: {
     padding: 20,
-    paddingBottom: 40,
+    paddingBottom: 100,
+  },
+  card: {
+    backgroundColor: theme.colors.card,
+    borderRadius: 15,
+    padding: 20,
+    marginBottom: 20,
+    shadowColor: theme.colors.shadow,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  sectionTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: theme.colors.text,
+    marginBottom: 15,
+  },
+  themeToggleContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  themeToggleLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  themeToggleText: {
+    fontSize: 16,
+    color: theme.colors.text,
+    fontWeight: '500',
   },
   inputGroup: {
     marginBottom: 20,
@@ -294,16 +371,17 @@ const styles = StyleSheet.create({
   label: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#2c3e50',
+    color: theme.colors.text,
     marginBottom: 8,
   },
   input: {
-    backgroundColor: '#fff',
+    backgroundColor: theme.colors.card,
     borderWidth: 1,
-    borderColor: '#ddd',
+    borderColor: theme.colors.border,
     borderRadius: 10,
     padding: 15,
     fontSize: 16,
+    color: theme.colors.text,
   },
   buttonRow: {
     flexDirection: 'row',
@@ -312,34 +390,34 @@ const styles = StyleSheet.create({
   },
   optionButton: {
     flex: 1,
-    backgroundColor: '#fff',
+    backgroundColor: theme.colors.card,
     borderWidth: 1,
-    borderColor: '#ddd',
+    borderColor: theme.colors.border,
     borderRadius: 10,
     padding: 12,
     alignItems: 'center',
   },
   optionButtonActive: {
-    backgroundColor: '#27ae60',
-    borderColor: '#27ae60',
+    backgroundColor: theme.colors.primary,
+    borderColor: theme.colors.primary,
   },
   optionText: {
     fontSize: 14,
-    color: '#2c3e50',
+    color: theme.colors.text,
   },
   optionTextActive: {
-    color: '#fff',
+    color: theme.colors.headerText,
     fontWeight: '600',
   },
   submitButton: {
-    backgroundColor: '#27ae60',
+    backgroundColor: theme.colors.primary,
     borderRadius: 10,
     padding: 18,
     alignItems: 'center',
     marginTop: 20,
   },
   submitButtonText: {
-    color: '#fff',
+    color: theme.colors.headerText,
     fontSize: 18,
     fontWeight: 'bold',
   },

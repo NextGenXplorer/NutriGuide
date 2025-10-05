@@ -5,6 +5,7 @@ const STORAGE_KEYS = {
   USER_PROFILE: '@nutriguide_user_profile',
   DAILY_PROGRESS: '@nutriguide_daily_progress',
   WEIGHT_HISTORY: '@nutriguide_weight_history',
+  DAILY_MEAL_PLAN: '@nutriguide_daily_meal_plan',
 };
 
 export const saveUserProfile = async (profile: UserProfile): Promise<void> => {
@@ -98,5 +99,26 @@ export const getWeightHistory = async (): Promise<Array<{ date: string; weight: 
   } catch (error) {
     console.error('Error getting weight history:', error);
     return [];
+  }
+};
+
+export const saveDailyMealPlan = async (date: string, mealPlan: any): Promise<void> => {
+  try {
+    const key = `${STORAGE_KEYS.DAILY_MEAL_PLAN}_${date}`;
+    await AsyncStorage.setItem(key, JSON.stringify(mealPlan));
+  } catch (error) {
+    console.error('Error saving daily meal plan:', error);
+    throw error;
+  }
+};
+
+export const getDailyMealPlan = async (date: string): Promise<any | null> => {
+  try {
+    const key = `${STORAGE_KEYS.DAILY_MEAL_PLAN}_${date}`;
+    const data = await AsyncStorage.getItem(key);
+    return data ? JSON.parse(data) : null;
+  } catch (error) {
+    console.error('Error getting daily meal plan:', error);
+    return null;
   }
 };

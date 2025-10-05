@@ -10,11 +10,14 @@ import ProgressScreen from '../screens/ProgressScreen';
 import AIChatScreen from '../screens/AIChatScreen';
 import AboutScreen from '../screens/AboutScreen';
 import { getUserProfile, saveUserProfile } from '../services/storage';
+import { useTheme } from '../context/ThemeContext';
 
 const Stack = createNativeStackNavigator();
 const Tab = createBottomTabNavigator();
 
 function MainTabs() {
+  const { theme } = useTheme();
+
   return (
     <Tab.Navigator
       screenOptions={({ route }) => ({
@@ -35,14 +38,17 @@ function MainTabs() {
 
           return <Ionicons name={iconName} size={size} color={color} />;
         },
-        tabBarActiveTintColor: '#27ae60',
-        tabBarInactiveTintColor: '#95a5a6',
+        tabBarActiveTintColor: theme.colors.primary,
+        tabBarInactiveTintColor: theme.colors.textTertiary,
         tabBarStyle: {
           paddingBottom: 20,
           paddingTop: 5,
           height: 75,
           position: 'absolute',
           bottom: 0,
+          backgroundColor: theme.colors.card,
+          borderTopColor: theme.colors.border,
+          borderTopWidth: 1,
         },
         headerShown: false,
       })}

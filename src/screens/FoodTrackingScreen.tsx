@@ -11,6 +11,7 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { useTheme } from '../context/ThemeContext';
 import * as ImagePicker from 'expo-image-picker';
 import { FoodLog } from '../types';
 import { addFoodLog, getDailyProgress, getUserProfile } from '../services/storage';
@@ -18,6 +19,7 @@ import { analyzeBMI } from '../utils/bmiCalculator';
 import { analyzeFoodImage, getFoodAlternatives } from '../services/geminiService';
 
 export default function FoodTrackingScreen() {
+  const { theme } = useTheme();
   const [foodName, setFoodName] = useState('');
   const [calories, setCalories] = useState('');
   const [mealType, setMealType] = useState<FoodLog['mealType']>('breakfast');
@@ -29,6 +31,8 @@ export default function FoodTrackingScreen() {
   const [profile, setProfile] = useState<any>(null);
   const [alternatives, setAlternatives] = useState<string[]>([]);
   const [showAlternatives, setShowAlternatives] = useState(false);
+  
+  const styles = createStyles(theme);
 
   const loadTodayData = async () => {
     const today = new Date().toISOString().split('T')[0];
@@ -135,13 +139,27 @@ export default function FoodTrackingScreen() {
 
     try {
       const result = await analyzeFoodImage(imageUri);
-      setFoodName(result.foodName);
-      setCalories(result.calories.toString());
-      Alert.alert(
-        'Food Detected! 🎉',
-        `${result.foodName}\nEstimated: ${result.calories} calories\n\n${result.description}`,
-        [{ text: 'OK' }]
-      );
+
+      // Check if the image is not food
+      if (result.foodName === 'Not Food' || result.calories === 0) {
+        Alert.alert(
+          'Not Food Detected! 🤔',
+          result.description || 'This image does not appear to contain edible food. Please upload a photo of food items.',
+          [{ text: 'OK' }]
+        );
+        setSelectedImage(null);
+        setFoodName('');
+        setCalories('');
+      } else {
+        // Valid food detected
+        setFoodName(result.foodName);
+        setCalories(result.calories.toString());
+        Alert.alert(
+          'Food Detected! 🎉',
+          `${result.foodName}\nEstimated: ${result.calories} calories\n\n${result.description}`,
+          [{ text: 'OK' }]
+        );
+      }
     } catch (error) {
       Alert.alert('Error', 'Failed to analyze food image. Please try again or enter manually.');
       console.error(error);
@@ -168,9 +186,16 @@ export default function FoodTrackingScreen() {
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.scrollContent}>
       <View style={styles.header}>
-        <View style={styles.headerTop}>
-          <Image source={require('../../assets/icon.png')} style={styles.logo} />
-          <Text style={styles.title}>Track Your Food 🍽️</Text>
+        <View style={styles.headerGradient}>
+          <View style={styles.headerTop}>
+            <View style={styles.logoContainer}>
+              <Ionicons name="restaurant-outline" size={32} color={theme.mode === 'dark' ? '#fff' : '#27ae60'} />
+            </View>
+            <View style={styles.headerTextContainer}>
+              <Text style={styles.title}>Food Tracker</Text>
+              <Text style={styles.subtitle}>Log & Analyze Your Meals</Text>
+            </View>
+          </View>
         </View>
       </View>
 
@@ -199,7 +224,7 @@ export default function FoodTrackingScreen() {
 
         {analyzingImage && (
           <View style={styles.analyzingContainer}>
-            <ActivityIndicator size="large" color="#27ae60" />
+            <ActivityIndicator size="large" color={theme.mode === 'dark' ? '#fff' : '#27ae60'} />
             <Text style={styles.analyzingText}>Analyzing food image...</Text>
           </View>
         )}
@@ -229,6 +254,7 @@ export default function FoodTrackingScreen() {
         <TextInput
           style={styles.input}
           placeholder="e.g., Oatmeal with fruits"
+          placeholderTextColor={theme.colors.textTertiary}
           value={foodName}
           onChangeText={setFoodName}
         />
@@ -237,6 +263,7 @@ export default function FoodTrackingScreen() {
         <TextInput
           style={styles.input}
           placeholder="e.g., 300"
+          placeholderTextColor={theme.colors.textTertiary}
           keyboardType="numeric"
           value={calories}
           onChangeText={(text) => {
@@ -343,41 +370,63 @@ export default function FoodTrackingScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (theme: any) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f5f5f5',
+    backgroundColor: theme.colors.background,
   },
   scrollContent: {
     paddingBottom: 90,
   },
   header: {
-    backgroundColor: '#27ae60',
-    padding: 20,
-    paddingTop: 40,
+    backgroundColor: theme.colors.headerBackground,
+    overflow: 'hidden',
+  },
+  headerGradient: {
+    padding: 24,
+    paddingTop: 50,
+    paddingBottom: 28,
+    backgroundColor: theme.colors.headerGradient,
   },
   headerTop: {
     flexDirection: 'row',
     alignItems: 'center',
   },
-  logo: {
-    width: 40,
-    height: 40,
-    marginRight: 10,
-    borderRadius: 20,
-    backgroundColor: '#fff',
+  logoContainer: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    backgroundColor: theme.mode === 'dark' ? 'rgba(255, 255, 255, 0.1)' : 'rgba(255, 255, 255, 0.2)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    shadowColor: theme.colors.shadow,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.08,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  headerTextContainer: {
+    marginLeft: 16,
+    flex: 1,
   },
   title: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: '#fff',
+    fontSize: 26,
+    fontWeight: '800',
+    color: theme.colors.headerText,
+    letterSpacing: 0.5,
+  },
+  subtitle: {
+    fontSize: 13,
+    color: theme.colors.headerSubtext,
+    marginTop: 2,
+    fontWeight: '500',
   },
   summaryCard: {
-    backgroundColor: '#fff',
+    backgroundColor: theme.colors.card,
     margin: 15,
     padding: 20,
     borderRadius: 15,
-    shadowColor: '#000',
+    shadowColor: theme.colors.shadow,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 4,
@@ -386,40 +435,40 @@ const styles = StyleSheet.create({
   summaryTitle: {
     fontSize: 18,
     fontWeight: 'bold',
-    color: '#2c3e50',
+    color: theme.colors.text,
     marginBottom: 10,
   },
   calorieText: {
     fontSize: 32,
     fontWeight: 'bold',
-    color: '#e74c3c',
+    color: theme.colors.error,
     textAlign: 'center',
     marginVertical: 10,
   },
   progressBarContainer: {
     height: 12,
-    backgroundColor: '#ecf0f1',
+    backgroundColor: theme.colors.divider,
     borderRadius: 6,
     overflow: 'hidden',
     marginVertical: 10,
   },
   progressBar: {
     height: '100%',
-    backgroundColor: '#27ae60',
+    backgroundColor: theme.colors.headerGradient,
     borderRadius: 6,
   },
   percentageText: {
     fontSize: 16,
-    color: '#7f8c8d',
+    color: theme.colors.textSecondary,
     textAlign: 'center',
   },
   inputCard: {
-    backgroundColor: '#fff',
+    backgroundColor: theme.colors.card,
     margin: 15,
     marginTop: 0,
     padding: 20,
     borderRadius: 15,
-    shadowColor: '#000',
+    shadowColor: theme.colors.shadow,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 4,
@@ -428,23 +477,24 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 18,
     fontWeight: 'bold',
-    color: '#2c3e50',
+    color: theme.colors.text,
     marginBottom: 15,
   },
   label: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#2c3e50',
+    color: theme.colors.text,
     marginBottom: 8,
     marginTop: 10,
   },
   input: {
-    backgroundColor: '#f5f5f5',
+    backgroundColor: theme.colors.background,
     borderWidth: 1,
-    borderColor: '#ddd',
+    borderColor: theme.colors.border,
     borderRadius: 10,
     padding: 15,
     fontSize: 16,
+    color: theme.colors.text,
   },
   mealTypeContainer: {
     flexDirection: 'row',
@@ -455,15 +505,15 @@ const styles = StyleSheet.create({
   mealTypeButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#f5f5f5',
+    backgroundColor: theme.colors.background,
     borderWidth: 1,
-    borderColor: '#ddd',
+    borderColor: theme.colors.border,
     borderRadius: 10,
     padding: 10,
     paddingHorizontal: 15,
   },
   mealTypeButtonActive: {
-    backgroundColor: '#e74c3c',
+    backgroundColor: theme.colors.error,
     borderColor: '#e74c3c',
   },
   mealTypeEmoji: {
@@ -472,15 +522,15 @@ const styles = StyleSheet.create({
   },
   mealTypeText: {
     fontSize: 14,
-    color: '#2c3e50',
+    color: theme.colors.text,
   },
   mealTypeTextActive: {
-    color: '#fff',
+    color: theme.colors.headerText,
     fontWeight: '600',
   },
   addButton: {
     flexDirection: 'row',
-    backgroundColor: '#27ae60',
+    backgroundColor: theme.colors.headerGradient,
     borderRadius: 10,
     padding: 15,
     alignItems: 'center',
@@ -488,7 +538,7 @@ const styles = StyleSheet.create({
     marginTop: 20,
   },
   addButtonText: {
-    color: '#fff',
+    color: theme.colors.headerText,
     fontSize: 16,
     fontWeight: 'bold',
     marginLeft: 8,
@@ -502,7 +552,7 @@ const styles = StyleSheet.create({
   analyzingContainer: {
     alignItems: 'center',
     padding: 20,
-    backgroundColor: '#f5f5f5',
+    backgroundColor: theme.colors.background,
     borderRadius: 10,
     marginBottom: 15,
   },
@@ -521,7 +571,7 @@ const styles = StyleSheet.create({
   cameraButton: {
     flex: 1,
     flexDirection: 'row',
-    backgroundColor: '#3498db',
+    backgroundColor: theme.colors.accent,
     padding: 12,
     borderRadius: 10,
     alignItems: 'center',
@@ -529,23 +579,23 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   cameraButtonText: {
-    color: '#fff',
+    color: theme.colors.headerText,
     fontSize: 14,
     fontWeight: '600',
   },
   orText: {
     textAlign: 'center',
-    color: '#7f8c8d',
+    color: theme.colors.textSecondary,
     fontSize: 14,
     marginVertical: 15,
   },
   logsCard: {
-    backgroundColor: '#fff',
+    backgroundColor: theme.colors.card,
     margin: 15,
     marginTop: 0,
     padding: 20,
     borderRadius: 15,
-    shadowColor: '#000',
+    shadowColor: theme.colors.shadow,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 4,
@@ -557,7 +607,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingVertical: 12,
     borderBottomWidth: 1,
-    borderBottomColor: '#ecf0f1',
+    borderBottomColor: theme.colors.divider,
   },
   logLeft: {
     flexDirection: 'row',
@@ -573,26 +623,26 @@ const styles = StyleSheet.create({
   },
   logName: {
     fontSize: 16,
-    color: '#2c3e50',
+    color: theme.colors.text,
     fontWeight: '500',
   },
   logTime: {
     fontSize: 12,
-    color: '#7f8c8d',
+    color: theme.colors.textSecondary,
     marginTop: 2,
   },
   logCalories: {
     fontSize: 16,
     fontWeight: 'bold',
-    color: '#e74c3c',
+    color: theme.colors.error,
   },
   tipsCard: {
-    backgroundColor: '#fff',
+    backgroundColor: theme.colors.card,
     margin: 15,
     marginTop: 0,
     padding: 20,
     borderRadius: 15,
-    shadowColor: '#000',
+    shadowColor: theme.colors.shadow,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 4,
@@ -602,18 +652,18 @@ const styles = StyleSheet.create({
   tipsTitle: {
     fontSize: 18,
     fontWeight: 'bold',
-    color: '#2c3e50',
+    color: theme.colors.text,
     marginBottom: 15,
   },
   tipItem: {
     fontSize: 14,
-    color: '#7f8c8d',
+    color: theme.colors.textSecondary,
     marginBottom: 10,
     lineHeight: 20,
   },
   aiButton: {
     flexDirection: 'row',
-    backgroundColor: '#9b59b6',
+    backgroundColor: theme.mode === 'dark' ? '#9b59b6' : '#9b59b6',
     borderRadius: 10,
     padding: 12,
     alignItems: 'center',
@@ -622,32 +672,32 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   aiButtonText: {
-    color: '#fff',
+    color: theme.colors.headerText,
     fontSize: 14,
     fontWeight: '600',
   },
   alternativesCard: {
-    backgroundColor: '#f3e5f5',
+    backgroundColor: theme.mode === 'dark' ? '#2a1a2e' : '#f3e5f5',
     padding: 15,
     borderRadius: 10,
     marginTop: 15,
     borderLeftWidth: 3,
-    borderLeftColor: '#9b59b6',
+    borderLeftColor: theme.mode === 'dark' ? '#b370cf' : '#9b59b6',
   },
   alternativesTitle: {
     fontSize: 16,
     fontWeight: 'bold',
-    color: '#6a1b9a',
+    color: theme.mode === 'dark' ? '#b370cf' : '#6a1b9a',
     marginBottom: 10,
   },
   alternativeItem: {
-    backgroundColor: '#fff',
+    backgroundColor: theme.colors.card,
     padding: 10,
     borderRadius: 8,
     marginBottom: 8,
   },
   alternativeText: {
     fontSize: 14,
-    color: '#6a1b9a',
+    color: theme.mode === 'dark' ? '#b370cf' : '#6a1b9a',
   },
 });

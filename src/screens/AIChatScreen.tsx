@@ -6,12 +6,13 @@ import {
   TouchableOpacity,
   StyleSheet,
   ScrollView,
-  KeyboardAvoidingView,
   Platform,
   ActivityIndicator,
   Image,
+  KeyboardAvoidingView,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { useTheme } from '../context/ThemeContext';
 import Markdown from 'react-native-markdown-display';
 import { getUserProfile } from '../services/storage';
 import { analyzeBMI } from '../utils/bmiCalculator';
@@ -26,6 +27,8 @@ interface Message {
 }
 
 export default function AIChatScreen() {
+  const { theme } = useTheme();
+  const styles = createStyles(theme);
   const [messages, setMessages] = useState<Message[]>([]);
   const [inputText, setInputText] = useState('');
   const [loading, setLoading] = useState(false);
@@ -106,20 +109,27 @@ export default function AIChatScreen() {
   return (
     <KeyboardAvoidingView
       style={styles.container}
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-      keyboardVerticalOffset={90}
+      behavior="padding"
+      keyboardVerticalOffset={0}
     >
       <View style={styles.header}>
-        <View style={styles.headerTop}>
-          <Image source={require('../../assets/icon.png')} style={styles.logo} />
-          <Text style={styles.headerTitle}>AI Nutrition Guide 💬</Text>
+        <View style={styles.headerGradient}>
+          <View style={styles.headerTop}>
+            <View style={styles.logoContainer}>
+              <Ionicons name="sparkles" size={32} color={theme.mode === 'dark' ? '#fff' : '#27ae60'} />
+            </View>
+            <View style={styles.headerTextContainer}>
+              <Text style={styles.headerTitle}>AI Coach</Text>
+              <Text style={styles.headerSubtitle}>Your Nutrition Assistant</Text>
+            </View>
+          </View>
         </View>
       </View>
 
       <ScrollView
         ref={scrollViewRef}
         style={styles.messagesContainer}
-        contentContainerStyle={[styles.messagesContent, { paddingBottom: 90 }]}
+        contentContainerStyle={[styles.messagesContent, { paddingBottom: 150 }]}
         onContentSizeChange={() => scrollViewRef.current?.scrollToEnd({ animated: true })}
       >
         {messages.map((message) => (
@@ -193,6 +203,7 @@ export default function AIChatScreen() {
         <TextInput
           style={styles.input}
           placeholder="Ask me anything about nutrition..."
+          placeholderTextColor={theme.colors.textTertiary}
           value={inputText}
           onChangeText={setInputText}
           multiline
@@ -214,31 +225,53 @@ export default function AIChatScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (theme: any) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f5f5f5',
+    backgroundColor: theme.colors.background,
   },
   header: {
-    backgroundColor: '#27ae60',
-    padding: 20,
-    paddingTop: 40,
+    backgroundColor: theme.colors.headerBackground,
+    overflow: 'hidden',
+  },
+  headerGradient: {
+    padding: 24,
+    paddingTop: 50,
+    paddingBottom: 28,
+    backgroundColor: theme.colors.headerGradient,
   },
   headerTop: {
     flexDirection: 'row',
     alignItems: 'center',
   },
-  logo: {
-    width: 40,
-    height: 40,
-    marginRight: 10,
-    borderRadius: 20,
-    backgroundColor: '#fff',
+  logoContainer: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    backgroundColor: theme.mode === 'dark' ? 'rgba(255, 255, 255, 0.1)' : 'rgba(255, 255, 255, 0.2)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    shadowColor: theme.colors.shadow,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.08,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  headerTextContainer: {
+    marginLeft: 16,
+    flex: 1,
   },
   headerTitle: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: '#fff',
+    fontSize: 26,
+    fontWeight: '800',
+    color: theme.colors.headerText,
+    letterSpacing: 0.5,
+  },
+  headerSubtitle: {
+    fontSize: 13,
+    color: theme.colors.headerSubtext,
+    marginTop: 2,
+    fontWeight: '500',
   },
   messagesContainer: {
     flex: 1,
@@ -255,12 +288,12 @@ const styles = StyleSheet.create({
   },
   userBubble: {
     alignSelf: 'flex-end',
-    backgroundColor: '#3498db',
+    backgroundColor: theme.colors.accent,
   },
   assistantBubble: {
     alignSelf: 'flex-start',
-    backgroundColor: '#fff',
-    shadowColor: '#000',
+    backgroundColor: theme.colors.card,
+    shadowColor: theme.colors.shadow,
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.1,
     shadowRadius: 2,
@@ -271,10 +304,10 @@ const styles = StyleSheet.create({
     lineHeight: 20,
   },
   userText: {
-    color: '#fff',
+    color: theme.colors.headerText,
   },
   assistantText: {
-    color: '#2c3e50',
+    color: theme.colors.text,
   },
   timestamp: {
     fontSize: 11,
@@ -291,10 +324,10 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     alignSelf: 'flex-start',
-    backgroundColor: '#fff',
+    backgroundColor: theme.colors.card,
     padding: 12,
     borderRadius: 15,
-    shadowColor: '#000',
+    shadowColor: theme.colors.shadow,
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.1,
     shadowRadius: 2,
@@ -302,7 +335,7 @@ const styles = StyleSheet.create({
   },
   loadingText: {
     marginLeft: 8,
-    color: '#7f8c8d',
+    color: theme.colors.textSecondary,
     fontSize: 14,
   },
   suggestionsContainer: {
@@ -311,15 +344,15 @@ const styles = StyleSheet.create({
   suggestionsTitle: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#2c3e50',
+    color: theme.colors.text,
     marginBottom: 10,
   },
   suggestionButton: {
-    backgroundColor: '#fff',
+    backgroundColor: theme.colors.card,
     padding: 12,
     borderRadius: 10,
     marginBottom: 8,
-    shadowColor: '#000',
+    shadowColor: theme.colors.shadow,
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.1,
     shadowRadius: 2,
@@ -327,19 +360,20 @@ const styles = StyleSheet.create({
   },
   suggestionText: {
     fontSize: 14,
-    color: '#3498db',
+    color: theme.colors.accent,
   },
   inputContainer: {
     flexDirection: 'row',
     padding: 10,
-    backgroundColor: '#fff',
+    paddingBottom: 80,
+    backgroundColor: theme.colors.card,
     borderTopWidth: 1,
-    borderTopColor: '#ecf0f1',
+    borderTopColor: theme.colors.border,
     alignItems: 'flex-end',
   },
   input: {
     flex: 1,
-    backgroundColor: '#f5f5f5',
+    backgroundColor: theme.colors.background,
     borderRadius: 20,
     paddingHorizontal: 15,
     paddingVertical: 10,
@@ -347,9 +381,10 @@ const styles = StyleSheet.create({
     fontSize: 15,
     maxHeight: 100,
     marginRight: 10,
+    color: theme.colors.text,
   },
   sendButton: {
-    backgroundColor: '#3498db',
+    backgroundColor: theme.colors.accent,
     width: 45,
     height: 45,
     borderRadius: 22.5,
@@ -357,29 +392,29 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   sendButtonDisabled: {
-    backgroundColor: '#ecf0f1',
+    backgroundColor: theme.colors.divider,
   },
   markdownHeading: {
     fontSize: 18,
     fontWeight: 'bold',
-    color: '#2c3e50',
+    color: theme.colors.text,
     marginTop: 8,
     marginBottom: 4,
   },
   markdownBold: {
     fontWeight: 'bold',
-    color: '#2c3e50',
+    color: theme.colors.text,
   },
   markdownItalic: {
     fontStyle: 'italic',
     color: '#34495e',
   },
   markdownLink: {
-    color: '#3498db',
+    color: theme.colors.accent,
     textDecorationLine: 'underline',
   },
   markdownCode: {
-    backgroundColor: '#f5f5f5',
+    backgroundColor: theme.colors.background,
     fontFamily: 'monospace',
     paddingHorizontal: 4,
     paddingVertical: 2,

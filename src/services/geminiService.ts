@@ -80,16 +80,23 @@ export const analyzeFoodImage = async (imageUri: string): Promise<{
       reader.readAsDataURL(blob);
     });
 
-    const prompt = `Analyze this food image and provide:
-1. The name of the food/dish
-2. Estimated calories (as a number)
-3. Brief nutritional description (protein, carbs, fats content)
+    const prompt = `Analyze this image carefully and determine if it contains food or edible items.
+
+If the image contains food:
+- Provide the name of the food/dish
+- Estimate calories (as a number)
+- Give brief nutritional description
+
+If the image does NOT contain food (like paper, objects, people, scenery, etc.):
+- Set foodName to "Not Food"
+- Set calories to 0
+- Set description to explain what was detected (e.g., "This appears to be a paper document, not food")
 
 Respond ONLY in this exact JSON format:
 {
-  "foodName": "name of the dish",
-  "calories": estimated_number,
-  "description": "brief nutritional info"
+  "foodName": "name of the dish or 'Not Food'",
+  "calories": estimated_number_or_0,
+  "description": "nutritional info or explanation of what was detected"
 }`;
 
     const result = await model.generateContent([

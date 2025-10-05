@@ -10,6 +10,7 @@ import {
   Image,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { useTheme } from '../context/ThemeContext';
 import Markdown from 'react-native-markdown-display';
 import { getUserProfile, saveWeight, getWeightHistory, saveUserProfile } from '../services/storage';
 import { UserProfile } from '../types';
@@ -17,6 +18,8 @@ import { analyzeBMI } from '../utils/bmiCalculator';
 import { analyzeProgress } from '../services/geminiService';
 
 export default function ProgressScreen() {
+  const { theme } = useTheme();
+  const styles = createStyles(theme);
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [newWeight, setNewWeight] = useState('');
   const [weightHistory, setWeightHistory] = useState<Array<{ date: string; weight: number }>>([]);
@@ -83,9 +86,9 @@ export default function ProgressScreen() {
     const diff = latest - previous;
 
     if (diff > 0) {
-      return { trend: 'up', value: diff.toFixed(1), color: '#e74c3c' };
+      return { trend: 'up', value: diff.toFixed(1), color: theme.colors.error };
     } else if (diff < 0) {
-      return { trend: 'down', value: Math.abs(diff).toFixed(1), color: '#27ae60' };
+      return { trend: 'down', value: Math.abs(diff).toFixed(1), color: theme.colors.primary };
     }
     return { trend: 'stable', value: '0', color: '#95a5a6' };
   };
@@ -110,9 +113,16 @@ export default function ProgressScreen() {
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.scrollContent}>
       <View style={styles.header}>
-        <View style={styles.headerTop}>
-          <Image source={require('../../assets/icon.png')} style={styles.logo} />
-          <Text style={styles.title}>Your Progress 📊</Text>
+        <View style={styles.headerGradient}>
+          <View style={styles.headerTop}>
+            <View style={styles.logoContainer}>
+              <Ionicons name="trending-up" size={32} color={theme.mode === 'dark' ? '#fff' : '#27ae60'} />
+            </View>
+            <View style={styles.headerTextContainer}>
+              <Text style={styles.title}>Progress Tracker</Text>
+              <Text style={styles.subtitle}>Monitor Your Journey</Text>
+            </View>
+          </View>
         </View>
       </View>
 
@@ -202,6 +212,7 @@ export default function ProgressScreen() {
         <TextInput
           style={styles.input}
           placeholder="Enter new weight (kg)"
+          placeholderTextColor={theme.colors.textTertiary}
           keyboardType="numeric"
           value={newWeight}
           onChangeText={(text) => {
@@ -265,42 +276,63 @@ export default function ProgressScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (theme: any) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f5f5f5',
+    backgroundColor: theme.colors.background,
   },
   scrollContent: {
     paddingBottom: 90,
   },
   header: {
-    backgroundColor: '#27ae60',
-    padding: 20,
-    paddingTop: 40,
+    backgroundColor: '#1e8449',
+    overflow: 'hidden',
+  },
+  headerGradient: {
+    padding: 24,
+    paddingTop: 50,
+    paddingBottom: 28,
+    backgroundColor: theme.colors.primary,
   },
   headerTop: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 15,
   },
-  logo: {
-    width: 40,
-    height: 40,
-    marginRight: 10,
-    borderRadius: 20,
-    backgroundColor: '#fff',
+  logoContainer: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    backgroundColor: theme.mode === 'dark' ? 'rgba(255, 255, 255, 0.1)' : 'rgba(255, 255, 255, 0.2)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    shadowColor: theme.colors.shadow,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.08,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  headerTextContainer: {
+    marginLeft: 16,
+    flex: 1,
   },
   title: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: '#fff',
+    fontSize: 26,
+    fontWeight: '800',
+    color: theme.colors.headerText,
+    letterSpacing: 0.5,
+  },
+  subtitle: {
+    fontSize: 13,
+    color: 'rgba(255, 255, 255, 0.85)',
+    marginTop: 2,
+    fontWeight: '500',
   },
   card: {
-    backgroundColor: '#fff',
+    backgroundColor: theme.colors.card,
     margin: 15,
     padding: 20,
     borderRadius: 15,
-    shadowColor: '#000',
+    shadowColor: theme.colors.shadow,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 4,
@@ -309,7 +341,7 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 18,
     fontWeight: 'bold',
-    color: '#2c3e50',
+    color: theme.colors.text,
     marginBottom: 15,
   },
   statsContainer: {
@@ -321,13 +353,13 @@ const styles = StyleSheet.create({
   },
   statLabel: {
     fontSize: 14,
-    color: '#7f8c8d',
+    color: theme.colors.textSecondary,
     marginBottom: 8,
   },
   statValue: {
     fontSize: 28,
     fontWeight: 'bold',
-    color: '#2c3e50',
+    color: theme.colors.text,
   },
   trendContainer: {
     alignItems: 'center',
@@ -340,17 +372,18 @@ const styles = StyleSheet.create({
   },
   trendLabel: {
     fontSize: 16,
-    color: '#7f8c8d',
+    color: theme.colors.textSecondary,
     marginTop: 5,
   },
   input: {
-    backgroundColor: '#f5f5f5',
+    backgroundColor: theme.colors.background,
     borderWidth: 1,
-    borderColor: '#ddd',
+    borderColor: theme.colors.border,
     borderRadius: 10,
     padding: 15,
     fontSize: 16,
     marginBottom: 15,
+    color: theme.colors.text,
   },
   updateButton: {
     flexDirection: 'row',
@@ -361,7 +394,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   updateButtonText: {
-    color: '#fff',
+    color: theme.colors.headerText,
     fontSize: 16,
     fontWeight: 'bold',
     marginLeft: 8,
@@ -372,11 +405,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingVertical: 12,
     borderBottomWidth: 1,
-    borderBottomColor: '#ecf0f1',
+    borderBottomColor: theme.colors.divider,
   },
   historyDate: {
     fontSize: 16,
-    color: '#2c3e50',
+    color: theme.colors.text,
   },
   historyWeight: {
     fontSize: 16,
@@ -385,16 +418,16 @@ const styles = StyleSheet.create({
   },
   goalText: {
     fontSize: 15,
-    color: '#7f8c8d',
+    color: theme.colors.textSecondary,
     lineHeight: 22,
   },
   tipsCard: {
-    backgroundColor: '#fff',
+    backgroundColor: theme.colors.card,
     margin: 15,
     marginTop: 0,
     padding: 20,
     borderRadius: 15,
-    shadowColor: '#000',
+    shadowColor: theme.colors.shadow,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 4,
@@ -404,12 +437,12 @@ const styles = StyleSheet.create({
   tipsTitle: {
     fontSize: 18,
     fontWeight: 'bold',
-    color: '#2c3e50',
+    color: theme.colors.text,
     marginBottom: 15,
   },
   tipItem: {
     fontSize: 14,
-    color: '#7f8c8d',
+    color: theme.colors.textSecondary,
     marginBottom: 10,
     lineHeight: 20,
   },
@@ -429,7 +462,7 @@ const styles = StyleSheet.create({
   aiTitle: {
     fontSize: 16,
     fontWeight: 'bold',
-    color: '#3498db',
+    color: theme.colors.accent,
     marginLeft: 8,
   },
   aiText: {
@@ -466,7 +499,7 @@ const styles = StyleSheet.create({
   },
   markdownCodeBlock: {
     backgroundColor: '#1565c0',
-    color: '#fff',
+    color: theme.colors.headerText,
     fontFamily: 'monospace',
     padding: 12,
     borderRadius: 8,

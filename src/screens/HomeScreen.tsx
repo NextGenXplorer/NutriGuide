@@ -10,16 +10,18 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { UserProfile, BMIResult, MealPlan } from '../types';
-import { getUserProfile, getDailyProgress } from '../services/storage';
+import { getUserProfile, getDailyProgress, getDailyMealPlan, saveDailyMealPlan } from '../services/storage';
 import { analyzeBMI } from '../utils/bmiCalculator';
 import { generateMealPlan, getProgressTips, getMotivation } from '../utils/mealPlanner';
 import { getAIMotivation, getAIMealSuggestions } from '../services/geminiService';
+import { useTheme } from '../context/ThemeContext';
 
 interface HomeScreenProps {
   navigation: any;
 }
 
 export default function HomeScreen({ navigation }: HomeScreenProps) {
+  const { theme } = useTheme();
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [bmiResult, setBmiResult] = useState<BMIResult | null>(null);
   const [mealPlan, setMealPlan] = useState<MealPlan | null>(null);
@@ -30,16 +32,27 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
   const [aiMotivation, setAiMotivation] = useState('');
   const [loadingAI, setLoadingAI] = useState(false);
 
+  const styles = createStyles(theme);
+
   const loadData = async () => {
     const userProfile = await getUserProfile();
     if (userProfile) {
       setProfile(userProfile);
       const result = analyzeBMI(userProfile);
       setBmiResult(result);
-      setMealPlan(generateMealPlan(userProfile, result.dailyCalorieGoal));
-      setMotivation(getMotivation(userProfile));
 
       const today = new Date().toISOString().split('T')[0];
+
+      // Check if meal plan exists for today, otherwise generate and save
+      let todayMealPlan = await getDailyMealPlan(today);
+      if (!todayMealPlan) {
+        todayMealPlan = generateMealPlan(userProfile, result.dailyCalorieGoal);
+        await saveDailyMealPlan(today, todayMealPlan);
+      }
+      setMealPlan(todayMealPlan);
+
+      setMotivation(getMotivation(userProfile));
+
       const todayProgress = await getDailyProgress(today);
       const consumed = todayProgress?.caloriesConsumed || 0;
       setCaloriesConsumed(consumed);
@@ -82,12 +95,21 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
       }
     >
       <View style={styles.header}>
-        <View style={styles.headerTop}>
-          <Image source={require('../../assets/icon.png')} style={styles.logo} />
-          <Text style={styles.appName}>NutriGuide</Text>
+        <View style={styles.headerGradient}>
+          <View style={styles.headerTop}>
+            <View style={styles.logoContainer}>
+              <Image source={require('../../assets/icon.png')} style={styles.logo} />
+            </View>
+            <View style={styles.headerTextContainer}>
+              <Text style={styles.appName}>NutriGuide</Text>
+              <Text style={styles.appTagline}>Your Wellness Companion</Text>
+            </View>
+          </View>
+          <View style={styles.greetingContainer}>
+            <Text style={styles.greeting}>Hello, {profile.name}! 👋</Text>
+            <Text style={styles.motivationText}>{motivation}</Text>
+          </View>
         </View>
-        <Text style={styles.greeting}>Hello, {profile.name}! 👋</Text>
-        <Text style={styles.motivationText}>{motivation}</Text>
       </View>
 
       {aiMotivation && (
@@ -211,55 +233,86 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (theme: any) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f5f5f5',
+    backgroundColor: theme.colors.background,
   },
   scrollContent: {
     paddingBottom: 90,
   },
   header: {
-    backgroundColor: '#27ae60',
-    padding: 20,
-    paddingTop: 40,
-    paddingBottom: 30,
+    backgroundColor: theme.colors.headerBackground,
+    overflow: 'hidden',
+  },
+  headerGradient: {
+    padding: 24,
+    paddingTop: 50,
+    paddingBottom: 32,
+    backgroundColor: theme.colors.headerGradient,
   },
   headerTop: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 15,
+    marginBottom: 20,
+  },
+  logoContainer: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    backgroundColor: theme.mode === 'dark' ? 'rgba(255, 255, 255, 0.1)' : 'rgba(255, 255, 255, 0.2)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    shadowColor: theme.colors.shadow,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.08,
+    shadowRadius: 4,
+    elevation: 2,
   },
   logo: {
-    width: 40,
-    height: 40,
-    marginRight: 10,
-    borderRadius: 20,
-    backgroundColor: '#fff',
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+  },
+  headerTextContainer: {
+    marginLeft: 16,
+    flex: 1,
   },
   appName: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: '#fff',
+    fontSize: 26,
+    fontWeight: '800',
+    color: theme.colors.headerText,
+    letterSpacing: 0.5,
+  },
+  appTagline: {
+    fontSize: 13,
+    color: theme.colors.headerSubtext,
+    marginTop: 2,
+    fontWeight: '500',
+  },
+  greetingContainer: {
+    marginTop: 8,
   },
   greeting: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: '#fff',
+    fontSize: 22,
+    fontWeight: '700',
+    color: theme.colors.headerText,
     marginBottom: 8,
+    letterSpacing: 0.3,
   },
   motivationText: {
-    fontSize: 16,
-    color: '#fff',
-    opacity: 0.9,
+    fontSize: 15,
+    color: theme.colors.headerSubtext,
+    lineHeight: 22,
+    fontWeight: '400',
   },
   card: {
-    backgroundColor: '#fff',
+    backgroundColor: theme.colors.card,
     margin: 15,
     marginBottom: 0,
     padding: 20,
     borderRadius: 15,
-    shadowColor: '#000',
+    shadowColor: theme.colors.shadow,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 4,
@@ -273,7 +326,7 @@ const styles = StyleSheet.create({
   cardTitle: {
     fontSize: 18,
     fontWeight: 'bold',
-    color: '#2c3e50',
+    color: theme.colors.text,
     marginLeft: 10,
   },
   bmiContainer: {
@@ -284,7 +337,7 @@ const styles = StyleSheet.create({
     width: 100,
     height: 100,
     borderRadius: 50,
-    backgroundColor: '#ecf0f1',
+    backgroundColor: theme.colors.divider,
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 20,
@@ -292,11 +345,11 @@ const styles = StyleSheet.create({
   bmiValue: {
     fontSize: 32,
     fontWeight: 'bold',
-    color: '#27ae60',
+    color: theme.colors.primary,
   },
   bmiLabel: {
     fontSize: 14,
-    color: '#7f8c8d',
+    color: theme.colors.textSecondary,
     marginTop: 4,
   },
   bmiInfo: {
@@ -305,42 +358,42 @@ const styles = StyleSheet.create({
   bmiCategory: {
     fontSize: 20,
     fontWeight: 'bold',
-    color: '#2c3e50',
+    color: theme.colors.text,
     marginBottom: 8,
   },
   bmiDescription: {
     fontSize: 14,
-    color: '#7f8c8d',
+    color: theme.colors.textSecondary,
     lineHeight: 20,
   },
   calorieGoal: {
     fontSize: 36,
     fontWeight: 'bold',
-    color: '#e74c3c',
+    color: theme.colors.error,
     textAlign: 'center',
     marginVertical: 10,
   },
   progressBarContainer: {
     height: 12,
-    backgroundColor: '#ecf0f1',
+    backgroundColor: theme.colors.divider,
     borderRadius: 6,
     overflow: 'hidden',
     marginVertical: 10,
   },
   progressBar: {
     height: '100%',
-    backgroundColor: '#27ae60',
+    backgroundColor: theme.colors.primary,
     borderRadius: 6,
   },
   caloriesText: {
     fontSize: 16,
-    color: '#2c3e50',
+    color: theme.colors.text,
     textAlign: 'center',
     marginBottom: 8,
   },
   progressTip: {
     fontSize: 14,
-    color: '#7f8c8d',
+    color: theme.colors.textSecondary,
     textAlign: 'center',
     fontStyle: 'italic',
   },
@@ -354,36 +407,36 @@ const styles = StyleSheet.create({
   macroValue: {
     fontSize: 28,
     fontWeight: 'bold',
-    color: '#3498db',
+    color: theme.colors.accent,
   },
   macroLabel: {
     fontSize: 14,
-    color: '#7f8c8d',
+    color: theme.colors.textSecondary,
     marginTop: 4,
   },
   mealItem: {
     marginBottom: 15,
     paddingBottom: 15,
     borderBottomWidth: 1,
-    borderBottomColor: '#ecf0f1',
+    borderBottomColor: theme.colors.divider,
   },
   mealType: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#2c3e50',
+    color: theme.colors.text,
     marginBottom: 6,
   },
   mealDescription: {
     fontSize: 14,
-    color: '#7f8c8d',
+    color: theme.colors.textSecondary,
     lineHeight: 20,
   },
   tipsCard: {
-    backgroundColor: '#fff',
+    backgroundColor: theme.colors.card,
     margin: 15,
     padding: 20,
     borderRadius: 15,
-    shadowColor: '#000',
+    shadowColor: theme.colors.shadow,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 4,
@@ -393,23 +446,23 @@ const styles = StyleSheet.create({
   tipsTitle: {
     fontSize: 18,
     fontWeight: 'bold',
-    color: '#2c3e50',
+    color: theme.colors.text,
     marginBottom: 15,
   },
   tipItem: {
     fontSize: 14,
-    color: '#7f8c8d',
+    color: theme.colors.textSecondary,
     marginBottom: 10,
     lineHeight: 20,
   },
   aiCard: {
-    backgroundColor: '#fff3cd',
+    backgroundColor: theme.mode === 'dark' ? '#3a3a1a' : '#fff3cd',
     margin: 15,
     marginTop: -10,
     padding: 15,
     borderRadius: 12,
     borderLeftWidth: 4,
-    borderLeftColor: '#f39c12',
+    borderLeftColor: theme.colors.warning,
   },
   aiHeader: {
     flexDirection: 'row',
@@ -419,12 +472,12 @@ const styles = StyleSheet.create({
   aiTitle: {
     fontSize: 16,
     fontWeight: 'bold',
-    color: '#f39c12',
+    color: theme.colors.warning,
     marginLeft: 8,
   },
   aiText: {
     fontSize: 14,
-    color: '#856404',
+    color: theme.mode === 'dark' ? '#d4a518' : '#856404',
     lineHeight: 20,
   },
 });

@@ -7,20 +7,55 @@ import {
   TouchableOpacity,
   Linking,
   Image,
+  Switch,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { useTheme } from '../context/ThemeContext';
 
 export default function AboutScreen() {
+  const { theme, themeMode, toggleTheme } = useTheme();
+
   const openLink = (url: string) => {
     Linking.openURL(url).catch((err) => console.error('Failed to open URL:', err));
   };
 
+  const styles = createStyles(theme);
+
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.scrollContent}>
       <View style={styles.header}>
-        <View style={styles.headerTop}>
-          <Image source={require('../../assets/icon.png')} style={styles.headerLogo} />
-          <Text style={styles.title}>About NutriGuide 💚</Text>
+        <View style={styles.headerGradient}>
+          <View style={styles.headerTop}>
+            <View style={styles.logoContainer}>
+              <Ionicons name="information-circle-outline" size={32} color={theme.mode === 'dark' ? '#fff' : '#27ae60'} />
+            </View>
+            <View style={styles.headerTextContainer}>
+              <Text style={styles.title}>About</Text>
+              <Text style={styles.subtitle}>NutriGuide Information</Text>
+            </View>
+          </View>
+        </View>
+      </View>
+
+      <View style={styles.card}>
+        <Text style={styles.sectionTitle}>Appearance</Text>
+        <View style={styles.themeToggleContainer}>
+          <View style={styles.themeToggleLeft}>
+            <Ionicons
+              name={themeMode === 'dark' ? 'moon' : 'sunny'}
+              size={24}
+              color={theme.colors.primary}
+            />
+            <Text style={styles.themeToggleText}>
+              {themeMode === 'dark' ? 'Dark Mode' : 'Light Mode'}
+            </Text>
+          </View>
+          <Switch
+            value={themeMode === 'dark'}
+            onValueChange={toggleTheme}
+            trackColor={{ false: '#ddd', true: theme.colors.primary }}
+            thumbColor="#fff"
+          />
         </View>
       </View>
 
@@ -35,23 +70,23 @@ export default function AboutScreen() {
       <View style={styles.card}>
         <Text style={styles.sectionTitle}>Features ✨</Text>
         <View style={styles.featureItem}>
-          <Ionicons name="fitness" size={20} color="#27ae60" />
+          <Ionicons name="fitness" size={20} color={theme.mode === 'dark' ? '#fff' : '#27ae60'} />
           <Text style={styles.featureText}>BMI Analysis & Tracking</Text>
         </View>
         <View style={styles.featureItem}>
-          <Ionicons name="restaurant" size={20} color="#27ae60" />
+          <Ionicons name="restaurant" size={20} color={theme.mode === 'dark' ? '#fff' : '#27ae60'} />
           <Text style={styles.featureText}>AI Food Recognition</Text>
         </View>
         <View style={styles.featureItem}>
-          <Ionicons name="chatbubbles" size={20} color="#27ae60" />
+          <Ionicons name="chatbubbles" size={20} color={theme.mode === 'dark' ? '#fff' : '#27ae60'} />
           <Text style={styles.featureText}>AI Nutrition Coach</Text>
         </View>
         <View style={styles.featureItem}>
-          <Ionicons name="trending-up" size={20} color="#27ae60" />
+          <Ionicons name="trending-up" size={20} color={theme.mode === 'dark' ? '#fff' : '#27ae60'} />
           <Text style={styles.featureText}>Progress Insights</Text>
         </View>
         <View style={styles.featureItem}>
-          <Ionicons name="calendar" size={20} color="#27ae60" />
+          <Ionicons name="calendar" size={20} color={theme.mode === 'dark' ? '#fff' : '#27ae60'} />
           <Text style={styles.featureText}>Personalized Meal Plans</Text>
         </View>
       </View>
@@ -112,43 +147,64 @@ export default function AboutScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (theme: any) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f5f5f5',
+    backgroundColor: theme.colors.background,
   },
   scrollContent: {
     paddingBottom: 90,
   },
   header: {
-    backgroundColor: '#27ae60',
-    padding: 20,
-    paddingTop: 40,
-    paddingBottom: 30,
+    backgroundColor: theme.colors.headerBackground,
+    overflow: 'hidden',
+  },
+  headerGradient: {
+    padding: 24,
+    paddingTop: 50,
+    paddingBottom: 28,
+    backgroundColor: theme.colors.headerGradient,
   },
   headerTop: {
     flexDirection: 'row',
     alignItems: 'center',
   },
-  headerLogo: {
-    width: 40,
-    height: 40,
-    marginRight: 10,
-    borderRadius: 20,
-    backgroundColor: '#fff',
+  logoContainer: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    backgroundColor: theme.mode === 'dark' ? 'rgba(255, 255, 255, 0.1)' : 'rgba(255, 255, 255, 0.2)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    shadowColor: theme.colors.shadow,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.08,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  headerTextContainer: {
+    marginLeft: 16,
+    flex: 1,
   },
   title: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: '#fff',
+    fontSize: 26,
+    fontWeight: '800',
+    color: theme.colors.headerText,
+    letterSpacing: 0.5,
+  },
+  subtitle: {
+    fontSize: 13,
+    color: theme.colors.headerSubtext,
+    marginTop: 2,
+    fontWeight: '500',
   },
   card: {
-    backgroundColor: '#fff',
+    backgroundColor: theme.colors.card,
     margin: 15,
     marginBottom: 0,
     padding: 20,
     borderRadius: 15,
-    shadowColor: '#000',
+    shadowColor: theme.colors.shadow,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 4,
@@ -157,13 +213,28 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 18,
     fontWeight: 'bold',
-    color: '#2c3e50',
+    color: theme.colors.text,
     marginBottom: 15,
   },
   description: {
     fontSize: 15,
-    color: '#7f8c8d',
+    color: theme.colors.textSecondary,
     lineHeight: 22,
+  },
+  themeToggleContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  themeToggleLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  themeToggleText: {
+    fontSize: 16,
+    color: theme.colors.text,
+    fontWeight: '500',
   },
   featureItem: {
     flexDirection: 'row',
@@ -172,17 +243,17 @@ const styles = StyleSheet.create({
   },
   featureText: {
     fontSize: 15,
-    color: '#2c3e50',
+    color: theme.colors.text,
     marginLeft: 12,
   },
   poweredCard: {
-    backgroundColor: '#fff',
+    backgroundColor: theme.colors.card,
     margin: 15,
     marginBottom: 0,
     padding: 25,
     borderRadius: 15,
     alignItems: 'center',
-    shadowColor: '#000',
+    shadowColor: theme.colors.shadow,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 4,
@@ -190,7 +261,7 @@ const styles = StyleSheet.create({
   },
   poweredTitle: {
     fontSize: 16,
-    color: '#7f8c8d',
+    color: theme.colors.textSecondary,
     marginBottom: 15,
   },
   logo: {
@@ -202,18 +273,18 @@ const styles = StyleSheet.create({
   companyName: {
     fontSize: 24,
     fontWeight: 'bold',
-    color: '#2c3e50',
+    color: theme.colors.text,
     marginBottom: 8,
   },
   tagline: {
     fontSize: 14,
-    color: '#7f8c8d',
+    color: theme.colors.textSecondary,
     textAlign: 'center',
     marginBottom: 20,
   },
   linkButton: {
     flexDirection: 'row',
-    backgroundColor: '#2c3e50',
+    backgroundColor: theme.colors.text,
     paddingHorizontal: 24,
     paddingVertical: 12,
     borderRadius: 25,
@@ -221,31 +292,31 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   linkText: {
-    color: '#fff',
+    color: theme.colors.surface,
     fontSize: 16,
     fontWeight: '600',
   },
   contactButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#f8f9fa',
+    backgroundColor: theme.mode === 'dark' ? theme.colors.surface : '#f8f9fa',
     padding: 15,
     borderRadius: 12,
     marginBottom: 12,
   },
   contactText: {
     fontSize: 15,
-    color: '#2c3e50',
+    color: theme.colors.text,
     marginLeft: 15,
     fontWeight: '500',
   },
   versionCard: {
-    backgroundColor: '#fff',
+    backgroundColor: theme.colors.card,
     margin: 15,
     padding: 20,
     borderRadius: 15,
     alignItems: 'center',
-    shadowColor: '#000',
+    shadowColor: theme.colors.shadow,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 4,
@@ -253,12 +324,12 @@ const styles = StyleSheet.create({
   },
   versionText: {
     fontSize: 14,
-    color: '#7f8c8d',
+    color: theme.colors.textSecondary,
     marginBottom: 8,
   },
   copyrightText: {
     fontSize: 12,
-    color: '#95a5a6',
+    color: theme.colors.textTertiary,
     textAlign: 'center',
   },
 });
