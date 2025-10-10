@@ -3,6 +3,7 @@ import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { Ionicons } from '@expo/vector-icons';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import OnboardingScreen from '../screens/OnboardingScreen';
 import HomeScreen from '../screens/HomeScreen';
 import FoodTrackingScreen from '../screens/FoodTrackingScreen';
@@ -17,6 +18,7 @@ const Tab = createBottomTabNavigator();
 
 function MainTabs() {
   const { theme } = useTheme();
+  const insets = useSafeAreaInsets();
 
   return (
     <Tab.Navigator
@@ -41,11 +43,13 @@ function MainTabs() {
         tabBarActiveTintColor: theme.colors.primary,
         tabBarInactiveTintColor: theme.colors.textTertiary,
         tabBarStyle: {
-          paddingBottom: 20,
+          paddingBottom: insets.bottom > 0 ? insets.bottom : 8,
           paddingTop: 5,
-          height: 75,
+          height: 60 + (insets.bottom > 0 ? insets.bottom : 8),
           position: 'absolute',
           bottom: 0,
+          left: 0,
+          right: 0,
           backgroundColor: theme.colors.card,
           borderTopColor: theme.colors.border,
           borderTopWidth: 1,
